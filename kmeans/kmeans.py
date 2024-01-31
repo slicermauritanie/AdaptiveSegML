@@ -4,6 +4,8 @@ from typing import Annotated, Optional
 
 import vtk
 
+from vtk.util import numpy_support
+
 import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
@@ -33,17 +35,17 @@ class kmeans(ScriptedLoadableModule):
         self.parent.title = "kmeans"  # TODO: make this more human readable by adding spaces
         self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-        self.parent.contributors = ["John Doe (AnyWare Corp.)"]  # TODO: replace with "Firstname Lastname (Organization)"
+        self.parent.contributors = ["Mohamed Abdellahi Sidi Mohamed Blal (FST-University Of Nouakchott), Mouhamedou Ahmed Mahmoud (FST-University Of Nouakchott), Elhacen Mouhamed Souilem (FST-University Of Nouakchott)"]  # TODO: replace with "Firstname Lastname (Organization)"
         # TODO: update with short description of the module and a link to online module documentation
         self.parent.helpText = """
-This is an example of scripted loadable module bundled in an extension.
-See more information in <a href="https://github.com/organization/projectname#kmeans">module documentation</a>.
-"""
+            This is an example of scripted loadable module bundled in an extension.
+            See more information in <a href="https://github.com/organization/projectname#kmeans">module documentation</a>.
+            """
         # TODO: replace with organization, grant and thanks
         self.parent.acknowledgementText = """
-This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc., Andras Lasso, PerkLab,
-and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
-"""
+            This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc., Andras Lasso, PerkLab,
+            and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
+            """
 
         # Additional initialization step after application startup is complete
         slicer.app.connect("startupCompleted()", registerSampleData)
@@ -115,10 +117,18 @@ class kmeansParameterNode:
     invertedVolume - The output volume that will contain the inverted thresholded volume.
     """
     inputVolume: vtkMRMLScalarVolumeNode
-    imageThreshold: Annotated[float, WithinRange(-100, 500)] = 100
+    imageThreshold: Annotated[float, WithinRange(0, 255)] = 100
     invertThreshold: bool = False
     thresholdedVolume: vtkMRMLScalarVolumeNode
     invertedVolume: vtkMRMLScalarVolumeNode
+    
+    numberOfClusters : int
+    # numberOfClusters: Annotated[int, WithinRange(1, 10)] = 2
+    # maxIterations : int
+    maxIterations: Annotated[float, WithinRange(1, 1000)] = 100
+    
+    # outputVolume: vtkMRMLScalarVolumeNode
+
 
 
 #
@@ -195,21 +205,24 @@ class kmeansWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self._parameterNode.disconnectGui(self._parameterNodeGuiTag)
             self._parameterNodeGuiTag = None
             self.removeObserver(self._parameterNode, vtk.vtkCommand.ModifiedEvent, self._checkCanApply)
-    def initializeParameterNode(self) -> None:
-        # existing code...
+    # def initializeParameterNode(self) -> None:
+    #     # existing code...
 
-        # Initialize UI elements with default values from parameter node
-        self.ui.numberOfClustersSpinBox.value = self._parameterNode.numberOfClusters
-        self.ui.maxIterationSlider.value = self._parameterNode.maxIterations
-        self.ui.imageThresholdSliderWidget.value = self._parameterNode.pixelThreshold
+    #     # Initialize UI elements with default values from parameter node
+    #     self.ui.numberOfClustersSpinBox.value = self._parameterNode.numberOfClusters
+    #     self.ui.maxIterationSlider.value = self._parameterNode.maxIterations
+    #     self.ui.imageThresholdSliderWidget.value = self._parameterNode.pixelThreshold
 
     # def setParameterNode(self, inputParameterNode: Optional[kmeansParameterNode]) -> None:
     #     # existing code...
 
     def _checkCanApply(self, caller=None, event=None) -> None:
         # Update condition to check for outputVolume as well
-        if self._parameterNode and self._parameterNode.inputVolume and self._parameterNode.outputVolume:
-            self.ui.applyButton.toolTip = "Compute output volume"
+        # if self._parameterNode and self._parameterNode.inputVolume and self._parameterNode.outputVolume:
+        # self.ui.applyButton.toolTip = "Apply The Adaptive Kmeans Algorithms"
+        # self.ui.applyButton.enabled = True
+        if self._parameterNode and self._parameterNode.inputVolume :
+            self.ui.applyButton.toolTip = "Apply The Adaptive Kmeans Algorithms"
             self.ui.applyButton.enabled = True
         else:
             self.ui.applyButton.toolTip = "Select input and output volume nodes"
@@ -262,6 +275,11 @@ class kmeansWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             firstVolumeNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
             if firstVolumeNode:
                 self._parameterNode.inputVolume = firstVolumeNode
+                
+        # Initialize UI elements with default values from parameter node
+        self.ui.numberOfClustersSpinBox.value = self._parameterNode.numberOfClusters
+        self.ui.maxIterationSlider.value = self._parameterNode.maxIterations
+        self.ui.imageThresholdSliderWidget.value = self._parameterNode.imageThreshold
 
     def setParameterNode(self, inputParameterNode: Optional[kmeansParameterNode]) -> None:
         """
@@ -295,15 +313,15 @@ class kmeansWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         with slicer.util.tryWithErrorDisplay("Failed to compute results.", waitCursor=True):
             # Get parameter values from UI
             numberOfClusters = self.ui.numberOfClustersSpinBox.value
-            maxIterations = self.ui.maxIterationsSpinBox.value
-            pixelThreshold = self.ui.pixelThresholdSlider.value
+            maxIterations = self.ui.maxIterationSlider.value
+            imageThreshold = self.ui.imageThresholdSliderWidget.value
 
             # Compute output
             self.logic.process(
                 inputVolume=self.ui.inputSelector.currentNode(),
-                numberOfClusters=numberOfClusters,
-                maxIterations=maxIterations,
-                pixelThreshold=pixelThreshold,
+                numberOfClusters=int(numberOfClusters),
+                maxIterations=int(maxIterations),
+                pixelThreshold=imageThreshold,
                 outputVolume=self.ui.outputSelector.currentNode()
             )
 #
@@ -328,6 +346,8 @@ class kmeansLogic(ScriptedLoadableModuleLogic):
 
     def getParameterNode(self):
         return kmeansParameterNode(super().getParameterNode())
+    
+   
     def process(self, inputVolume, numberOfClusters, maxIterations, pixelThreshold, outputVolume):
             """
             Run the processing algorithm.
@@ -345,9 +365,16 @@ class kmeansLogic(ScriptedLoadableModuleLogic):
             import time
             startTime = time.time()
             logging.info('Processing started')
+            
+            print(f"numberOfClusters : {numberOfClusters}")
+            print(f"maxIterations : {maxIterations}")
+            print(f"pixelThreshold : {pixelThreshold}")
 
             # Extract numpy array from the input volume
             imageData = slicer.util.arrayFromVolume(inputVolume)
+            print(f"imageData : {imageData.shape}")
+            
+            
             originalShape = imageData.shape
             imageData = imageData.flatten()
 
@@ -356,7 +383,7 @@ class kmeansLogic(ScriptedLoadableModuleLogic):
             imageData = imageData[mask]
 
             # Perform K-means segmentation
-            kmeans = KMeans(n_clusters=numberOfClusters, max_iter=maxIterations, random_state=0)
+            kmeans = KMeans(n_clusters=numberOfClusters, max_iter=maxIterations, random_state=42)
             kmeans.fit(imageData.reshape(-1, 1))
             labels = kmeans.labels_
 
@@ -367,46 +394,57 @@ class kmeansLogic(ScriptedLoadableModuleLogic):
             # Create output volume
             segmentedData = segmentedData.reshape(originalShape)
             slicer.util.updateVolumeFromArray(outputVolume, segmentedData)
+            
+            
+            # # Update the new volume node with the filtered image data
+            # slicer.util.updateVolumeFromArray(outputVolumeNode, filtered_image)
+
+            # Notify Slicer that the volume data has changed
+            outputVolume.GetImageData().Modified()
+
+            # Update the display
+            slicer.app.applicationLogic().GetSelectionNode().SetReferenceActiveVolumeID(outputVolume.GetID())
+            slicer.app.applicationLogic().PropagateVolumeSelection(0)
 
             stopTime = time.time()
             logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
 
-    def process(self,
-                inputVolume: vtkMRMLScalarVolumeNode,
-                outputVolume: vtkMRMLScalarVolumeNode,
-                imageThreshold: float,
-                invert: bool = False,
-                showResult: bool = True) -> None:
-        """
-        Run the processing algorithm.
-        Can be used without GUI widget.
-        :param inputVolume: volume to be thresholded
-        :param outputVolume: thresholding result
-        :param imageThreshold: values above/below this threshold will be set to 0
-        :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-        :param showResult: show output volume in slice viewers
-        """
+    # def process(self,
+    #             inputVolume: vtkMRMLScalarVolumeNode,
+    #             outputVolume: vtkMRMLScalarVolumeNode,
+    #             imageThreshold: float,
+    #             invert: bool = False,
+    #             showResult: bool = True) -> None:
+    #     """
+    #     Run the processing algorithm.
+    #     Can be used without GUI widget.
+    #     :param inputVolume: volume to be thresholded
+    #     :param outputVolume: thresholding result
+    #     :param imageThreshold: values above/below this threshold will be set to 0
+    #     :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
+    #     :param showResult: show output volume in slice viewers
+    #     """
 
-        if not inputVolume or not outputVolume:
-            raise ValueError("Input or output volume is invalid")
+    #     if not inputVolume or not outputVolume:
+    #         raise ValueError("Input or output volume is invalid")
 
-        import time
-        startTime = time.time()
-        logging.info('Processing started')
+    #     import time
+    #     startTime = time.time()
+    #     logging.info('Processing started')
 
-        # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-        cliParams = {
-            'InputVolume': inputVolume.GetID(),
-            'OutputVolume': outputVolume.GetID(),
-            'ThresholdValue': imageThreshold,
-            'ThresholdType': 'Above' if invert else 'Below'
-        }
-        cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-        # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-        slicer.mrmlScene.RemoveNode(cliNode)
+    #     # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
+    #     cliParams = {
+    #         'InputVolume': inputVolume.GetID(),
+    #         'OutputVolume': outputVolume.GetID(),
+    #         'ThresholdValue': imageThreshold,
+    #         'ThresholdType': 'Above' if invert else 'Below'
+    #     }
+    #     cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
+    #     # We don't need the CLI module node anymore, remove it to not clutter the scene with it
+    #     slicer.mrmlScene.RemoveNode(cliNode)
 
-        stopTime = time.time()
-        logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
+    #     stopTime = time.time()
+    #     logging.info(f'Processing completed in {stopTime-startTime:.2f} seconds')
 
 
 #
