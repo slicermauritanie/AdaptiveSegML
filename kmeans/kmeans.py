@@ -376,7 +376,9 @@ class kmeansLogic(ScriptedLoadableModuleLogic):
             
             
             originalShape = imageData.shape
-            imageData = imageData.flatten()
+            # imageData = imageData.flatten()
+            # Reshape to 2D array
+            flattened_data = imageData.reshape((-1, imageData.shape[-1]))
 
             # Apply threshold
             mask = imageData > pixelThreshold
@@ -384,13 +386,20 @@ class kmeansLogic(ScriptedLoadableModuleLogic):
 
             # Perform K-means segmentation
             kmeans = KMeans(n_clusters=numberOfClusters, max_iter=maxIterations, random_state=42)
-            kmeans.fit(imageData.reshape(-1, 1))
+            # kmeans.fit(imageData.reshape(-1, 1))
+            kmeans.fit(flattened_data)
             labels = kmeans.labels_
+            
+            # Reshape labels to 3D
+            segmented_labels = labels.reshape(imageData.shape[:-1])
+            
 
             # Map labels back to original image shape
             segmentedData = np.zeros_like(imageData)
-            segmentedData[mask] = labels + 1  # Add 1 to avoid zero-labels being invisible
+            segmentedData[mask] = segmented_labels
+            # labels + 1  # Add 1 to avoid zero-labels being invisible
 
+          
             # Create output volume
             segmentedData = segmentedData.reshape(originalShape)
             slicer.util.updateVolumeFromArray(outputVolume, segmentedData)
