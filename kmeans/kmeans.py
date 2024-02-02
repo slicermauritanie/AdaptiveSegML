@@ -389,12 +389,12 @@ class kmeansLogic(ScriptedLoadableModuleLogic):
             # segmented_labels = labels.reshape(imageData.shape)
 
             # Map labels back to original image shape
-            segmentedData = np.zeros_like(imageData)
-            segmentedData[mask] = labels
+            # segmentedData = np.zeros_like(imageData)
+            imageData[mask] = labels
             # segmentedData = segmentedData.reshape(originalShape)
 
             # Create output volume
-            slicer.util.updateVolumeFromArray(outputVolume, segmentedData)
+            slicer.util.updateVolumeFromArray(outputVolume, imageData)
             
             # # Update the new volume node with the filtered image data
             # slicer.util.updateVolumeFromArray(outputVolumeNode, filtered_image)
