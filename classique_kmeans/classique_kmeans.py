@@ -334,37 +334,64 @@ class classique_kmeansLogic(ScriptedLoadableModuleLogic):
        
        
         imageData = slicer.util.arrayFromVolume(inputVolume)
-        print(f"imageData : {imageData.shape}")
-        originalShape = imageData.shape
+        
 
     
 
-        # Perform K-means segmentation
+        # # Perform K-means segmentation
+        # kmeans = KMeans(n_clusters=numberOfClusters, max_iter=maxIterations, random_state=42)
+        # # kmeans = kmeans.fit(imageData.reshape(-1, 1))
+        # kmeans = kmeans.fit(imageData.reshape(-1, imageData.shape[-1]))
+        
+        # labels = kmeans.labels_
+        # print('labels', labels)
+        # centers = np.uint8(kmeans.cluster_centers_)
+        # print(f"centers : {centers}")
+
+        # # Reshape labels to 3D
+        # # segmented_labels = labels.reshape(imageData.shape)
+
+        # # # Map labels back to original image shape
+        # # segmentedData = np.zeros_like(imageData)
+        # # segmentedData = labels
+        # # # segmentedData = segmentedData.reshape(originalShape)
+        
+        # # centers = np.uint8(self.centroids)
+        
+        # segmented_image = centers[labels.flatten()]
+        # segmented_image.reshape(originalShape)
+        
+        
+        # Reshape the 3D data into a 2D array for k-means clustering
+        # Each data point should be a vector of the pixel values in each channel
+        # For example, if your image has RGB channels, each data point will be a vector [R, G, B]
+        print(f"imageData : {imageData.shape}")
+        data_shape = imageData.shape
+        # data_shape = img_data.shape
+        img_data_reshaped = imageData.reshape((data_shape[0] * data_shape[1], data_shape[2]))
+
+        # Choose the number of clusters (k) for k-means
+        # num_clusters = 5  # Adjust this based on your specific image and segmentation needs
+
+        # Apply k-means clustering
         kmeans = KMeans(n_clusters=numberOfClusters, max_iter=maxIterations, random_state=42)
-        # kmeans = kmeans.fit(imageData.reshape(-1, 1))
-        kmeans = kmeans.fit(imageData.reshape(-1, imageData.shape[-1]))
-        
-        labels = kmeans.labels_
-        print('labels', labels)
-        centers = np.uint8(kmeans.cluster_centers_)
-        print(f"centers : {centers}")
+        kmeans.fit(img_data_reshaped)
 
-        # Reshape labels to 3D
-        # segmented_labels = labels.reshape(imageData.shape)
+        # Get cluster assignments for each pixel
+        cluster_labels = kmeans.labels_
 
-        # # Map labels back to original image shape
-        # segmentedData = np.zeros_like(imageData)
-        # segmentedData = labels
-        # # segmentedData = segmentedData.reshape(originalShape)
-        
-        # centers = np.uint8(self.centroids)
-        
-        segmented_image = centers[labels.flatten()]
-        segmented_image.reshape(originalShape)
+        # Reshape the cluster labels back to the shape of the original image
+        cluster_labels_reshaped = cluster_labels.reshape((data_shape[0], data_shape[1]))
+
+        # Create a segmented image using the cluster labels
+        segmented_image = np.zeros_like(imageData)
+        for cluster in range(numberOfClusters):
+            segmented_image[cluster_labels_reshaped == cluster] = kmeans.cluster_centers_[cluster]
 
         # Create output volume
         slicer.util.updateVolumeFromArray(outputVolume, segmented_image)
             
+        
         # # Update the new volume node with the filtered image data
         # slicer.util.updateVolumeFromArray(outputVolumeNode, filtered_image)
 
