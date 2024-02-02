@@ -117,7 +117,7 @@ class kmeansParameterNode:
     invertedVolume - The output volume that will contain the inverted thresholded volume.
     """
     inputVolume: vtkMRMLScalarVolumeNode
-    imageThreshold: Annotated[float, WithinRange(0, 255)] = 100
+    imageThreshold: Annotated[float, WithinRange(0, 254)] = 100
     invertThreshold: bool = False
     thresholdedVolume: vtkMRMLScalarVolumeNode
     invertedVolume: vtkMRMLScalarVolumeNode
@@ -370,40 +370,31 @@ class kmeansLogic(ScriptedLoadableModuleLogic):
             print(f"maxIterations : {maxIterations}")
             print(f"pixelThreshold : {pixelThreshold}")
 
-            # Extract numpy array from the input volume
+
+
             imageData = slicer.util.arrayFromVolume(inputVolume)
             print(f"imageData : {imageData.shape}")
-            
-            
             originalShape = imageData.shape
-            # imageData = imageData.flatten()
-            # Reshape to 2D array
-            flattened_data = imageData.reshape((-1, imageData.shape[-1]))
 
             # Apply threshold
             mask = imageData > pixelThreshold
-            imageData = imageData[mask]
 
             # Perform K-means segmentation
             kmeans = KMeans(n_clusters=numberOfClusters, max_iter=maxIterations, random_state=42)
-            # kmeans.fit(imageData.reshape(-1, 1))
-            kmeans.fit(flattened_data)
+            kmeans.fit(imageData[mask].reshape(-1, 1))
             labels = kmeans.labels_
-            
+            print('labels', labels)
+
             # Reshape labels to 3D
-            segmented_labels = labels.reshape(imageData.shape[:-1])
-            
+            # segmented_labels = labels.reshape(imageData.shape)
 
             # Map labels back to original image shape
             segmentedData = np.zeros_like(imageData)
-            segmentedData[mask] = segmented_labels
-            # labels + 1  # Add 1 to avoid zero-labels being invisible
+            segmentedData[mask] = labels
+            # segmentedData = segmentedData.reshape(originalShape)
 
-          
             # Create output volume
-            segmentedData = segmentedData.reshape(originalShape)
             slicer.util.updateVolumeFromArray(outputVolume, segmentedData)
-            
             
             # # Update the new volume node with the filtered image data
             # slicer.util.updateVolumeFromArray(outputVolumeNode, filtered_image)
