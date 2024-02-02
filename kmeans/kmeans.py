@@ -7,6 +7,8 @@ import vtk
 from vtk.util import numpy_support
 
 import slicer
+from slicer.i18n import tr as _
+from slicer.i18n import translate
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 from slicer.parameterNodeWrapper import (
@@ -32,8 +34,8 @@ class kmeans(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "kmeans"  # TODO: make this more human readable by adding spaces
-        self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
+        self.parent.title = _("The Mauritania Adaptative Kmeans")  # TODO: make this more human readable by adding spaces
+        self.parent.categories = [translate("qSlicerAbstractCoreModule", "Examples")] #["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
         self.parent.dependencies = []  # TODO: add here list of module names that this module requires
         self.parent.contributors = ["Mohamed Abdellahi Sidi Mohamed Blal (FST-University Of Nouakchott), Mouhamedou Ahmed Mahmoud (FST-University Of Nouakchott), Elhacen Mouhamed Souilem (FST-University Of Nouakchott)"]  # TODO: replace with "Firstname Lastname (Organization)"
         # TODO: update with short description of the module and a link to online module documentation
@@ -43,8 +45,7 @@ class kmeans(ScriptedLoadableModule):
             """
         # TODO: replace with organization, grant and thanks
         self.parent.acknowledgementText = """
-            This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc., Andras Lasso, PerkLab,
-            and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
+            This file was originally developed by Mohamed Abdellahi Sidi Mohamed Blal (FST-University Of Nouakchott), Mouhamedou Ahmed Mahmoud (FST-University Of Nouakchott), Elhacen Mouhamed Souilem (FST-University Of Nouakchott).
             """
 
         # Additional initialization step after application startup is complete
@@ -221,11 +222,11 @@ class kmeansWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # if self._parameterNode and self._parameterNode.inputVolume and self._parameterNode.outputVolume:
         # self.ui.applyButton.toolTip = "Apply The Adaptive Kmeans Algorithms"
         # self.ui.applyButton.enabled = True
-        if self._parameterNode and self._parameterNode.inputVolume :
-            self.ui.applyButton.toolTip = "Apply The Adaptive Kmeans Algorithms"
+        if self._parameterNode and self._parameterNode.inputVolume and self._parameterNode.thresholdedVolume:
+            self.ui.applyButton.toolTip = _("Apply The Adaptive Kmeans Algorithms")  #"Apply The Adaptive Kmeans Algorithms"
             self.ui.applyButton.enabled = True
         else:
-            self.ui.applyButton.toolTip = "Select input and output volume nodes"
+            self.ui.applyButton.toolTip = _("Select input and output volume nodes")
             self.ui.applyButton.enabled = False
 
     # def onApplyButton(self) -> None:

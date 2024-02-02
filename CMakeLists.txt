@@ -72,6 +72,8 @@ include(${Slicer_USE_FILE})
 #-----------------------------------------------------------------------------
 # Extension modules
 add_subdirectory(kmeans)
+add_subdirectory(classique_kmeans)
+add_subdirectory(classique_kmeans)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------
